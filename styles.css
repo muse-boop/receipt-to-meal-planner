@@ -174,7 +174,7 @@ textarea#receiptText:focus { outline: none; border-color: var(--rust); }
 .ai-box .ai-toggle { display: flex; gap: 10px; align-items: flex-start; font-weight: 700; cursor: pointer; }
 .ai-box .ai-toggle input { margin-top: 4px; }
 .ai-box .hint { font-size: 0.85rem; color: var(--cocoa-soft); margin: 10px 0 12px; }
-.ai-box input[type="text"], .ai-box input[type="password"] {
+.ai-box input[type="text"], .ai-box input[type="password"], .ai-box input[type="email"] {
   width: 100%; box-sizing: border-box; font: inherit; padding: 10px 12px; margin-bottom: 12px;
   border: 1.5px solid var(--sand); border-radius: 10px; background: #fff;
 }

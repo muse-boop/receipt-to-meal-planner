@@ -483,6 +483,54 @@
   $("startOver").addEventListener("click", function () { goStep(1); });
   $("printPlan").addEventListener("click", function () { window.print(); });
 
+  /* ---------- emailed AI plan requests ----------
+     Posts the receipt to the shared project-inbox endpoint; a scheduled
+     job picks it up, generates the plan, and emails it back. */
+  var PLAN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxFuAczmnF_2zAED4saFZNDAXcWk9mWeTbM0GHqaV19P0sFViVPQIVJxYeB2iGpgq0Mzg/exec";
+  function planRequestStatus(msg, isErr) {
+    var el = $("planReqStatus");
+    el.textContent = msg;
+    el.className = "ai-status" + (isErr ? " err" : "");
+  }
+  $("requestPlan").addEventListener("click", function () {
+    var name = $("planName").value.trim();
+    var email = $("planEmail").value.trim();
+    if (!email || email.indexOf("@") === -1) {
+      planRequestStatus("Enter a valid email address so I know where to send your plan.", true);
+      return;
+    }
+    if (!state.items.length) {
+      planRequestStatus("Add your receipt items first (step 2), then request your plan.", true);
+      return;
+    }
+    var receiptLines = state.items.map(function (i) {
+      return "- " + i.label + (i.qty ? " (" + i.qty + ")" : "");
+    }).join("\n");
+    var pantryLines = Array.from(state.pantry).map(prettyName).join(", ");
+    var data = new URLSearchParams();
+    data.append("name", name || "(no name given)");
+    data.append("email", email);
+    data.append("title", "Meal Plan Request");
+    data.append("type", "Meal Plan Request");
+    data.append("details", "Days: " + state.days + "\n\nReceipt items:\n" + receiptLines +
+      "\n\nPantry staples: " + (pantryLines || "(none selected)"));
+    var btn = $("requestPlan");
+    btn.disabled = true;
+    btn.textContent = "Sending…";
+    fetch(PLAN_SCRIPT_URL, { method: "POST", mode: "no-cors", body: data })
+      .then(function () {
+        planRequestStatus("Request sent! I'll email your meal plan to " + email +
+          " — usually within about 30 minutes.", false);
+      })
+      .catch(function () {
+        planRequestStatus("Something didn't go through — mind trying again?", true);
+      })
+      .finally(function () {
+        btn.disabled = false;
+        btn.innerHTML = "Email me my meal plan &rarr;";
+      });
+  });
+
   /* Demo mode: ?demo=1 loads the sample receipt and jumps to a finished plan.
      Used for the projects-page screenshot (and curious visitors). */
   function loadDemo() {

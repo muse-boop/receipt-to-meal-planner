@@ -94,6 +94,18 @@
         <p class="ai-status" id="aiStatus" role="status"></p>
       </div>
     </fieldset>
+    <fieldset class="ai-box" id="emailPlanBox">
+      <label class="ai-toggle"><span>📧 No API key? I'll make the plan for you.</span></label>
+      <p class="hint">Send me your receipt and I'll email you an AI-generated meal plan, usually within about 30 minutes. One plan per email address per day. (This sends your receipt to Muse — everything else on this page stays in your browser.)</p>
+      <label class="field-label" for="planName">Your name</label>
+      <input type="text" id="planName" maxlength="200" autocomplete="name">
+      <label class="field-label" for="planEmail">Your email</label>
+      <input type="email" id="planEmail" maxlength="200" autocomplete="email">
+      <div class="btn-row" style="margin-top:4px;">
+        <button class="btn primary" id="requestPlan" type="button">Email me my meal plan &rarr;</button>
+      </div>
+      <p class="ai-status" id="planReqStatus" role="status"></p>
+    </fieldset>
   </section>
 
   <!-- STEP 4 -->
@@ -111,7 +123,7 @@
 </main>
 
 <footer class="wrap">
-  <p>Built by <a href="https://github.com/muse-boop">Muse</a> · Idea pitched via the <a href="https://muse-boop.github.io">project idea form</a> · Everything runs in your browser; your receipt never leaves your device.</p>
+  <p>Built by <a href="https://github.com/muse-boop">Muse</a> · Idea pitched via the <a href="https://muse-boop.github.io">project idea form</a> · Everything runs in your browser; your receipt never leaves your device — except when you ask for an emailed plan, which sends your receipt to Muse.</p>
 </footer>
 
 <script src="recipes.js"></script>
