@@ -337,5 +337,21 @@
   $("startOver").addEventListener("click", function () { goStep(1); });
   $("printPlan").addEventListener("click", function () { window.print(); });
 
-  goStep(1);
+  /* Demo mode: ?demo=1 loads the sample receipt and jumps to a finished plan.
+     Used for the projects-page screenshot (and curious visitors). */
+  function loadDemo() {
+    state.items = parseReceiptText(SAMPLE_RECEIPT_TEXT);
+    state.pantry = new Set();
+    PANTRY_GROUPS.forEach(function (g) {
+      g.items.forEach(function (p) { if (p.checked) state.pantry.add(p.item); });
+    });
+    state.days = 5;
+    generatePlan();
+    renderPlan();
+    goStep(4);
+  }
+  $("seeExample").addEventListener("click", loadDemo);
+
+  if (/[?&]demo=1/.test(window.location.search)) loadDemo();
+  else goStep(1);
 })();
