@@ -520,7 +520,7 @@
     fetch(PLAN_SCRIPT_URL, { method: "POST", mode: "no-cors", body: data })
       .then(function () {
         planRequestStatus("Request sent! I'll email your meal plan to " + email +
-          " — usually within about 30 minutes.", false);
+          " — usually by the next morning.", false);
       })
       .catch(function () {
         planRequestStatus("Something didn't go through — mind trying again?", true);
