@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Receipt to Meal Planner</title>
+<meta name="description" content="Upload a grocery receipt and get a meal plan built around what you actually bought — with ingredient re-use prioritized.">
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="https://muse-boop.github.io">&larr; Muse</a>
+    <h1>Receipt to Meal Planner</h1>
+    <p class="tagline">Upload a grocery receipt. Get a meal plan built around what you actually bought.</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <nav class="steps" aria-label="Progress">
+    <div class="step-dot active" data-step="1"><span>1</span> Receipt</div>
+    <div class="step-dot" data-step="2"><span>2</span> Items</div>
+    <div class="step-dot" data-step="3"><span>3</span> Pantry</div>
+    <div class="step-dot" data-step="4"><span>4</span> Plan</div>
+  </nav>
+
+  <!-- STEP 1 -->
+  <section class="step-panel" id="step-1">
+    <h2>Start with your receipt</h2>
+    <p class="lede">Snap a photo of a grocery receipt and I'll read it. Or paste receipt text — or just try the sample.</p>
+    <div class="dropzone" id="dropzone">
+      <p class="dz-big">Drop a receipt photo here</p>
+      <p class="dz-small">or</p>
+      <label class="btn" for="fileInput">Choose a photo</label>
+      <input type="file" id="fileInput" accept="image/*" hidden>
+    </div>
+    <div id="previewWrap" hidden>
+      <img id="previewImg" alt="Receipt preview">
+    </div>
+    <p id="ocrStatus" class="status" role="status"></p>
+    <label class="field-label" for="receiptText">Receipt text <span class="hint">(editable — fix anything the scanner missed)</span></label>
+    <textarea id="receiptText" rows="8" placeholder="FRESH CHICKEN BREAST 2.5 LB&#10;BROCCOLI FLORETS 12 OZ&#10;…"></textarea>
+    <div class="btn-row">
+      <button class="btn ghost" id="useSample" type="button">Try a sample receipt</button>
+      <button class="btn primary" id="toItems" type="button">Find my items &rarr;</button>
+    </div>
+  </section>
+
+  <!-- STEP 2 -->
+  <section class="step-panel" id="step-2" hidden>
+    <h2>Check your items</h2>
+    <p class="lede">I pulled these from your receipt. Fix names, tweak quantities, remove the junk lines.</p>
+    <div id="itemList"></div>
+    <button class="btn ghost" id="addItem" type="button">+ Add an item</button>
+    <div class="btn-row">
+      <button class="btn ghost" id="backToUpload" type="button">&larr; Back</button>
+      <button class="btn primary" id="toPantry" type="button">Next: pantry staples &rarr;</button>
+    </div>
+  </section>
+
+  <!-- STEP 3 -->
+  <section class="step-panel" id="step-3" hidden>
+    <h2>What's already in your pantry?</h2>
+    <p class="lede">The plan leans on your receipt first, then fills gaps from staples you already own. Uncheck anything you don't have.</p>
+    <div id="pantryGroups"></div>
+    <h3 class="days-label">How many days should I plan?</h3>
+    <div class="days-row">
+      <button class="btn day-btn" id="days3" type="button">3 days</button>
+      <button class="btn day-btn" id="days5" type="button">5 days</button>
+      <button class="btn day-btn" id="days7" type="button">7 days</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn ghost" id="backToItems" type="button">&larr; Back</button>
+      <button class="btn primary" id="generate" type="button">Generate my meal plan &rarr;</button>
+    </div>
+  </section>
+
+  <!-- STEP 4 -->
+  <section class="step-panel" id="step-4" hidden>
+    <h2>Your meal plan</h2>
+    <p class="lede">Meals are picked to use up your receipt first, re-use ingredients across days, and lean on your pantry for the rest. <span class="legend"><span class="chip receipt">receipt</span> <span class="chip pantry">pantry</span></span></p>
+    <div id="planOut"></div>
+    <div class="btn-row">
+      <button class="btn ghost" id="backToPantry" type="button">&larr; Tweak pantry</button>
+      <button class="btn ghost" id="regenerate" type="button">Shuffle the plan</button>
+      <button class="btn ghost" id="printPlan" type="button">Print</button>
+      <button class="btn primary" id="startOver" type="button">Start over</button>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap">
+  <p>Built by <a href="https://github.com/muse-boop">Muse</a> · Idea pitched via the <a href="https://muse-boop.github.io">project idea form</a> · Everything runs in your browser; your receipt never leaves your device.</p>
+</footer>
+
+<script src="recipes.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
