@@ -10,6 +10,7 @@
     pantry: new Set(),
     days: 5,
     plan: null,      // [{ day, meals: [{slot, recipe, fromReceipt, fromPantry, missing}] }]
+    planSource: "builtin", // "builtin" | "ai"
   };
 
   /* ---------- helpers ---------- */
@@ -216,10 +217,154 @@
   });
   $("backToItems").addEventListener("click", function () { goStep(2); });
   $("generate").addEventListener("click", function () {
+    if (ai.enabled) { generatePlanAI(); return; }
     generatePlan();
+    state.planSource = "builtin";
     renderPlan();
     goStep(4);
   });
+
+  /* ---------- AI recipe generation (bring your own key) ----------
+     Uses any OpenAI-compatible /chat/completions endpoint. The key lives
+     in localStorage and is only ever sent to the configured base URL. */
+  var AI_STORE = "r2mp-ai";
+  function loadAI() {
+    try {
+      var raw = localStorage.getItem(AI_STORE);
+      if (raw) return JSON.parse(raw);
+    } catch (e) { /* storage unavailable — fall through to defaults */ }
+    return { enabled: false, key: "", model: "gpt-4o-mini", base: "https://api.openai.com/v1" };
+  }
+  var ai = loadAI();
+  function saveAI() {
+    try { localStorage.setItem(AI_STORE, JSON.stringify(ai)); } catch (e) { /* ignore */ }
+  }
+  function aiStatus(msg, isErr) {
+    var el = $("aiStatus");
+    el.textContent = msg;
+    el.className = "ai-status" + (isErr ? " err" : "");
+  }
+  $("useAI").checked = !!ai.enabled;
+  $("aiKey").value = ai.key || "";
+  $("aiModel").value = ai.model || "gpt-4o-mini";
+  $("aiBase").value = ai.base || "https://api.openai.com/v1";
+  $("aiFields").hidden = !ai.enabled;
+  $("useAI").addEventListener("change", function () {
+    ai.enabled = $("useAI").checked;
+    $("aiFields").hidden = !ai.enabled;
+    saveAI();
+  });
+  ["aiKey", "aiModel", "aiBase"].forEach(function (id) {
+    $(id).addEventListener("change", function () {
+      ai.key = $("aiKey").value.trim();
+      ai.model = $("aiModel").value.trim() || "gpt-4o-mini";
+      ai.base = ($("aiBase").value.trim().replace(/\/+$/, "")) || "https://api.openai.com/v1";
+      saveAI();
+    });
+  });
+
+  function buildAIPrompt() {
+    var receiptLines = state.items.map(function (i) {
+      return "- " + i.label + (i.qty ? " (" + i.qty + ")" : "");
+    });
+    var pantryLines = Array.from(state.pantry).map(prettyName);
+    return "Create a " + state.days + "-day meal plan (breakfast, lunch, and dinner each day) " +
+      "using the groceries below.\n\n" +
+      "PRIORITIES, in order:\n" +
+      "1. Use up the RECEIPT items first — every receipt item should appear in at least one meal if at all plausible.\n" +
+      "2. RE-USE ingredients across meals and days (e.g. cook extra chicken for day 1 dinner, use leftovers for day 2 lunch).\n" +
+      "3. Fill remaining needs from the PANTRY staples.\n" +
+      "4. Only if a meal truly needs something else, mark that ingredient source as \"buy\" — keep these minimal.\n\n" +
+      "RECEIPT ITEMS:\n" + receiptLines.join("\n") + "\n\n" +
+      "PANTRY STAPLES:\n- " + pantryLines.join("\n- ") + "\n\n" +
+      "Return ONLY valid JSON (no markdown fences, no commentary) in exactly this shape:\n" +
+      "{\"days\":[{\"day\":1,\"meals\":[{\"slot\":\"breakfast\",\"name\":\"Veggie Omelet\",\"time\":\"15 min\",\"serves\":2," +
+      "\"ingredients\":[{\"item\":\"eggs\",\"qty\":\"4\",\"source\":\"receipt\"}]," +
+      "\"steps\":[\"Whisk the eggs with a pinch of salt.\",\"Cook in a buttered skillet until just set.\"]}]}]}\n" +
+      "Rules: slot is one of breakfast/lunch/dinner; source is one of receipt/pantry/buy; " +
+      "steps are 3-6 short imperative sentences; keep ingredient names simple and generic.";
+  }
+
+  function stripFences(s) {
+    return String(s).replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+  }
+
+  function planFromAI(data) {
+    if (!data || !Array.isArray(data.days) || data.days.length !== state.days) return null;
+    var receiptSet = new Set(state.items.map(function (i) { return i.canonical; }));
+    var plan = [];
+    for (var d = 0; d < data.days.length; d++) {
+      var dd = data.days[d];
+      if (!dd || !Array.isArray(dd.meals) || dd.meals.length !== 3) return null;
+      var day = { day: d + 1, meals: [] };
+      var ok = true;
+      dd.meals.forEach(function (m) {
+        if (!m || !m.name || !Array.isArray(m.ingredients) || !Array.isArray(m.steps)) { ok = false; return; }
+        var fromReceipt = [], fromPantry = [], missing = [];
+        m.ingredients.forEach(function (g) {
+          var raw = String((g && g.item) || "").trim();
+          if (!raw) return;
+          var canon = canonicalize(raw) || raw.toLowerCase();
+          var ing = { item: canon, qty: (g && g.qty) || "" };
+          if (receiptSet.has(canon)) fromReceipt.push(ing);
+          else if (state.pantry.has(canon)) fromPantry.push(ing);
+          else missing.push(ing);
+        });
+        day.meals.push({
+          slot: String(m.slot || "").toLowerCase(),
+          recipe: {
+            name: String(m.name),
+            time: String(m.time || ""),
+            serves: m.serves || 2,
+            steps: m.steps.map(function (s) { return String(s); })
+          },
+          fromReceipt: fromReceipt, fromPantry: fromPantry, missing: missing
+        });
+      });
+      if (!ok) return null;
+      plan.push(day);
+    }
+    return plan;
+  }
+
+  function generatePlanAI() {
+    if (!ai.key) { aiStatus("Add your API key first — the key field is empty.", true); return; }
+    var btn = $("generate");
+    btn.disabled = true;
+    btn.textContent = "Asking the AI…";
+    aiStatus("Generating your plan — this usually takes a few seconds.", false);
+    fetch(ai.base + "/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + ai.key },
+      body: JSON.stringify({
+        model: ai.model,
+        messages: [
+          { role: "system", content: "You are a meal-planning assistant. You output strict JSON only, no commentary." },
+          { role: "user", content: buildAIPrompt() }
+        ],
+        temperature: 0.7
+      })
+    }).then(function (resp) {
+      if (!resp.ok) throw new Error("API returned HTTP " + resp.status + " — check your key, model, and base URL.");
+      return resp.json();
+    }).then(function (data) {
+      var text = (((data.choices || [])[0] || {}).message || {}).content || "";
+      var plan = planFromAI(JSON.parse(stripFences(text)));
+      if (!plan) throw new Error("the AI returned a plan I couldn't parse — try again.");
+      state.plan = plan;
+      state.planSource = "ai";
+      aiStatus("", false);
+      renderPlan();
+      goStep(4);
+    }).catch(function (err) {
+      if (state.step === 4) goStep(3);
+      aiStatus("Couldn't generate with AI: " + err.message +
+        " The built-in recipe box still works — uncheck the AI box to use it.", true);
+    }).finally(function () {
+      btn.disabled = false;
+      btn.innerHTML = "Generate my meal plan &rarr;";
+    });
+  }
 
   /* ---------- step 4: planning engine ---------- */
   function scoreRecipe(recipe, available, receiptSet, usedSet) {
@@ -303,7 +448,7 @@
               (i.qty ? ' <span class="qty">' + esc(i.qty) + "</span>" : "") + " <em>· pick up</em></li>";
           }).join("") +
           "</ul>" +
-          '<ol class="steps">' + r.steps.map(function (s) { return "<li>" + esc(s) + "</li>"; }).join("") + "</ol>" +
+          '<ol class="recipe-steps">' + r.steps.map(function (s) { return "<li>" + esc(s) + "</li>"; }).join("") + "</ol>" +
           "</div>";
       });
       html += "</div>";
@@ -331,6 +476,7 @@
 
   $("backToPantry").addEventListener("click", function () { goStep(3); });
   $("regenerate").addEventListener("click", function () {
+    if (state.planSource === "ai") { generatePlanAI(); return; }
     generatePlan(); renderPlan();
     window.scrollTo({ top: 0, behavior: "smooth" });
   });

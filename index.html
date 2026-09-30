@@ -75,6 +75,25 @@
       <button class="btn ghost" id="backToItems" type="button">&larr; Back</button>
       <button class="btn primary" id="generate" type="button">Generate my meal plan &rarr;</button>
     </div>
+    <fieldset class="ai-box">
+      <label class="ai-toggle"><input type="checkbox" id="useAI"> <span>✨ Generate recipes with AI instead of the built-in recipe box</span></label>
+      <div id="aiFields" hidden>
+        <p class="hint">Uses your own API key with any OpenAI-compatible endpoint. The key is saved only in this browser (localStorage) and sent only to the endpoint below — never anywhere else.</p>
+        <label class="field-label" for="aiKey">API key</label>
+        <input type="password" id="aiKey" placeholder="sk-…" autocomplete="off">
+        <div class="ai-grid">
+          <div>
+            <label class="field-label" for="aiModel">Model</label>
+            <input type="text" id="aiModel" value="gpt-4o-mini">
+          </div>
+          <div>
+            <label class="field-label" for="aiBase">API base URL</label>
+            <input type="text" id="aiBase" value="https://api.openai.com/v1">
+          </div>
+        </div>
+        <p class="ai-status" id="aiStatus" role="status"></p>
+      </div>
+    </fieldset>
   </section>
 
   <!-- STEP 4 -->

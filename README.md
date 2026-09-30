@@ -30,6 +30,21 @@ Recipes are scored per meal slot on three factors:
 Recipes aren't repeated within a plan unless the database runs out of options
 for a slot.
 
+## AI-generated recipes (optional)
+
+On the pantry step you can tick "Generate recipes with AI" to have recipes
+created fresh for your receipt instead of picked from the built-in box. It
+uses your own API key with any OpenAI-compatible `/chat/completions`
+endpoint (OpenAI, OpenRouter, etc.):
+
+- The key is stored only in your browser's localStorage and sent only to the
+  endpoint you configure — never anywhere else.
+- The AI gets your receipt items, pantry staples, and day count, with the
+  same priorities: use up the receipt first, re-use ingredients across meals,
+  lean on pantry staples, and keep extra purchases minimal.
+- "Shuffle the plan" re-runs whichever engine produced the current plan.
+- If the AI call fails, the built-in planner remains available as a fallback.
+
 ## Tech
 
 - Plain HTML/CSS/JS — no build step, no backend

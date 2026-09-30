@@ -164,8 +164,25 @@ textarea#receiptText:focus { outline: none; border-color: var(--rust); }
 .ing-list li.missing { background: var(--amber-bg); color: #7A5A1E; }
 .ing-list li.missing em { font-style: normal; font-weight: 700; }
 
-.steps { margin-left: 20px; font-size: 0.93rem; color: var(--cocoa); }
-.steps li { margin-bottom: 6px; }
+.recipe-steps { margin-left: 20px; font-size: 0.93rem; color: var(--cocoa); }
+.recipe-steps li { margin-bottom: 6px; }
+
+.ai-box {
+  border: 1px dashed var(--rust); border-radius: 14px; padding: 16px 18px; margin: 22px 0 6px;
+  background: #FFFDF8;
+}
+.ai-box .ai-toggle { display: flex; gap: 10px; align-items: flex-start; font-weight: 700; cursor: pointer; }
+.ai-box .ai-toggle input { margin-top: 4px; }
+.ai-box .hint { font-size: 0.85rem; color: var(--cocoa-soft); margin: 10px 0 12px; }
+.ai-box input[type="text"], .ai-box input[type="password"] {
+  width: 100%; box-sizing: border-box; font: inherit; padding: 10px 12px; margin-bottom: 12px;
+  border: 1.5px solid var(--sand); border-radius: 10px; background: #fff;
+}
+.ai-box input:focus { outline: none; border-color: var(--rust); }
+.ai-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+@media (max-width: 560px) { .ai-grid { grid-template-columns: 1fr; } }
+.ai-status { font-size: 0.9rem; color: #7A5A1E; margin-top: 10px; min-height: 1.2em; }
+.ai-status.err { color: #A33B2E; }
 
 .legend .chip {
   display: inline-block; font-size: 0.75rem; font-weight: 700; border-radius: 999px;
